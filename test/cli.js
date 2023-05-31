@@ -68,8 +68,8 @@ test('sorts save file', async (t) => {
     path.join(dir, 'tmp', 'mapping.json')
   )
   await copyFile(
-    path.join('test', 'fixtures', 'categories.json'),
-    path.join(dir, 'tmp', 'categories.json')
+    path.join('test', 'fixtures', 'items.json'),
+    path.join(dir, 'tmp', 'items.json')
   )
   await copyFile(
     path.join('test', 'fixtures', 'save.hg'),
@@ -89,9 +89,27 @@ test('downloads configuration files', async (t) => {
 
   run('-u', dir)
 
-  const mappings = JSON.parse(await readFile(path.join(dir, 'tmp', 'mapping.json')))
+  const mappings = JSON.parse(
+    await readFile(path.join(dir, 'tmp', 'mapping.json'))
+  )
   t.deepEqual(Object.keys(mappings[0]), ['Key', 'Value'])
 
-  const categories = JSON.parse(await readFile(path.join(dir, 'tmp', 'categories.json')))
-  t.assert(categories['EX_RED'])
+  const items = JSON.parse(await readFile(path.join(dir, 'tmp', 'items.json')))
+  t.assert(Array.isArray(items['EX_RED']))
+})
+
+test('prints inventory items', async (t) => {
+  const dir = await getTemporaryDirectory(t)
+
+  await copyFile(
+    path.join('test', 'fixtures', 'items.json'),
+    path.join(dir, 'tmp', 'items.json')
+  )
+  await copyFile(
+    path.join('test', 'fixtures', 'save.hg'),
+    path.join(dir, 'save.hg')
+  )
+
+  const output = run('-p', dir)
+  t.snapshot(output.toString('utf8'))
 })

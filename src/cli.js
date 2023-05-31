@@ -5,9 +5,11 @@ import {
   readSaveFile,
   encodeSaveFile,
   sortSaveFile,
-  downloadCategories,
+  downloadItems,
   downloadMappings,
+  getInventoryItems,
 } from './main.js'
+import _ from 'lodash'
 
 async function writeJson(opts, data, skipBackup) {
   if (opts.in === opts.out) {
@@ -29,6 +31,7 @@ sade(pkg.name, true)
   .option('-u, --update', 'Download the configuration files then exit')
   .option('-d, --decode', 'Decript and decode save file then exit')
   .option('-e, --encode', 'Encode save file then exit')
+  .option('-p, --print', 'Print inventory items then exit')
   .action(async (opts) => {
     opts.out ??= opts.in
 
@@ -41,7 +44,7 @@ sade(pkg.name, true)
     }
 
     if (opts.update) {
-      await Promise.all([downloadCategories(), downloadMappings()])
+      await Promise.all([downloadItems(), downloadMappings()])
       process.exit(0)
     }
 
@@ -55,6 +58,48 @@ sade(pkg.name, true)
       const data = JSON.parse(await readFile(opts.in))
       const raw = await encodeSaveFile(data)
       await writeJson(opts, raw)
+      process.exit(0)
+    }
+
+    if (opts.print) {
+      const data = await readSaveFile(opts.in)
+      const inventoryItems = await getInventoryItems(data)
+
+      const cols = _.chain(inventoryItems)
+        .flatMap()
+        .compact()
+        .reduce(
+          (cols, item) => ({
+            ...cols,
+            ..._.mapValues(item, (value, key) =>
+              Math.max(String(value).length, cols[key] ?? 0)
+            ),
+          }),
+          {}
+        )
+        .value()
+
+      const res = _.chain(inventoryItems)
+        .flatMap((value, key) =>
+          !value || value.length < 1
+            ? []
+            : [
+                key,
+                ''.padEnd(key.length, '-'),
+                ...value.map((item) =>
+                  [
+                    _.capitalize(item.name).padEnd(cols.name),
+                    item.id.padEnd(cols.id),
+                    String(item.amount).padEnd(cols.amount),
+                    item.category?.padEnd(cols.category),
+                  ].join('\t')
+                ),
+                '\n',
+              ]
+        )
+        .join('\n')
+        .value()
+      console.log(res)
       process.exit(0)
     }
 

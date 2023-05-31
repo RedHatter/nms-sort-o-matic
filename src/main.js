@@ -28,9 +28,19 @@ function get(url) {
   )
 }
 
-const getCategories = _.memoize(async () => {
+async function getNames() {
+  const items = await getItems()
+  return _.mapValues(items, ([name, category]) => name)
+}
+
+async function getCategories() {
+  const items = await getItems()
+  return _.mapValues(items, ([name, category]) => category)
+}
+
+const getItems = _.memoize(async () => {
   try {
-    const raw = await readFile(path.join('tmp', 'categories.json'), {
+    const raw = await readFile(path.join('tmp', 'items.json'), {
       encoding: 'utf8',
     })
     return JSON.parse(raw)
@@ -40,10 +50,10 @@ const getCategories = _.memoize(async () => {
     }
   }
 
-  return downloadCategories()
+  return downloadItems()
 })
 
-export async function downloadCategories() {
+export async function downloadItems() {
   const data = await Promise.all(
     ['66931870', '984581625', '1672062070', '874018846'].map(async (sheet) =>
       parseCsv(
@@ -58,18 +68,18 @@ export async function downloadCategories() {
     )
   )
 
-  const categories = _.chain(data)
+  const items = _.chain(data)
     .flatten()
     .keyBy('ID')
-    .mapValues('Category')
+    .mapValues((row) => [
+      row['Translated Name'] ?? row['TRANSLATED NAME'] ?? row['EN_Name'],
+      row.Category,
+    ])
     .value()
 
-  await writeFile(
-    path.join('tmp', 'categories.json'),
-    JSON.stringify(categories)
-  )
+  await writeFile(path.join('tmp', 'items.json'), JSON.stringify(items))
 
-  return categories
+  return items
 }
 
 const getMappings = _.memoize(async () => {
@@ -270,4 +280,44 @@ export async function sortSaveFile(data) {
   data.__sorted = true
 
   return data
+}
+
+export async function getInventoryItems(data) {
+  const categories = await getCategories()
+  const names = await getNames()
+
+  return _.mapValues(
+    {
+      Inventory: data.PlayerStateData.Inventory,
+      ..._.chain(data.PlayerStateData.ShipOwnership)
+        .mapKeys((value, i) => `Ship ${value.Name ?? parseInt(i) + 1}`)
+        .mapValues('Inventory')
+        .value(),
+      ..._.chain(data.PlayerStateData.VehicleOwnership)
+        .mapKeys((value, i) => `Exocraft ${value.Name ?? parseInt(i) + 1}`)
+        .mapValues('Inventory')
+        .value(),
+      'Chest 1': data.PlayerStateData.Chest1Inventory,
+      'Chest 2': data.PlayerStateData.Chest2Inventory,
+      'Chest 3': data.PlayerStateData.Chest3Inventory,
+      'Chest 4': data.PlayerStateData.Chest4Inventory,
+      'Chest 5': data.PlayerStateData.Chest5Inventory,
+      'Chest 6': data.PlayerStateData.Chest6Inventory,
+      'Chest 7': data.PlayerStateData.Chest7Inventory,
+      'Chest 8': data.PlayerStateData.Chest8Inventory,
+      'Chest 9': data.PlayerStateData.Chest9Inventory,
+      'Chest 10': data.PlayerStateData.Chest10Inventory,
+    },
+    (inv) =>
+      inv.Slots?.map((item) => {
+        const id = item.Id.substring(1)
+
+        return {
+          id,
+          name: names[id] ?? '<unknown>',
+          amount: item.Amount,
+          category: categories[id] ?? '<unknown>',
+        }
+      })
+  )
 }
