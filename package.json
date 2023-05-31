@@ -8,12 +8,12 @@
   "type": "module",
   "main": "src/main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/cli.js",
-    "format": "npx prettier -w src/**/*.js *.js",
-    "bundle": "npx rollup -c",
-    "package": "npx pkg -t latest-win-x64 --o dist/nms-tidy.exe dist/bundle.js",
-    "release": "npm run format && npm run bundle && npm run package"
+    "test": "ava",
+    "build:format": "npx prettier -w src/**/*.js test/**/*.js *.js",
+    "build:bundle": "npx rollup -c",
+    "build:package": "npx pkg -t latest-win-x64 --o dist/nms-tidy.exe dist/bundle.js",
+    "build": "npm run build:format && npm run build:bundle && npm run build:package"
   },
   "dependencies": {
     "csv-parse": "^5.4.0",
@@ -24,6 +24,8 @@
   "devDependencies": {
     "@rollup/plugin-commonjs": "^25.0.0",
     "@rollup/plugin-json": "^6.0.0",
-    "@rollup/plugin-node-resolve": "^15.1.0"
+    "@rollup/plugin-node-resolve": "^15.1.0",
+    "ava": "^5.3.0",
+    "uid": "^2.0.2"
   }
 }
