@@ -36,7 +36,7 @@ test('decodes save file', async (t) => {
     path.join(dir, 'save.hg')
   )
 
-  run('-d -o save.json', dir)
+  run('decode save.hg -o save.json', dir)
 
   const raw = JSON.parse(await readFile(path.join(dir, 'save.json')))
   t.snapshot(raw)
@@ -54,7 +54,7 @@ test('encodes save file', async (t) => {
     path.join(dir, 'save.json')
   )
 
-  run('-e -i save.json -o save.hg', dir)
+  run('encode save.json -o save.hg', dir)
 
   const raw = JSON.parse(await readFile(path.join(dir, 'save.hg')))
   t.snapshot(raw)
@@ -76,7 +76,7 @@ test('sorts save file', async (t) => {
     path.join(dir, 'save.hg')
   )
 
-  run('', dir)
+  run('save.hg', dir)
 
   const raw = JSON.parse(await readFile(path.join(dir, 'save.hg')))
   t.snapshot(raw)
@@ -87,7 +87,7 @@ test('sorts save file', async (t) => {
 test('downloads configuration files', async (t) => {
   const dir = await getTemporaryDirectory(t)
 
-  run('-u', dir)
+  run('update', dir)
 
   const mappings = JSON.parse(
     await readFile(path.join(dir, 'tmp', 'mapping.json'))
@@ -110,6 +110,6 @@ test('prints inventory items', async (t) => {
     path.join(dir, 'save.hg')
   )
 
-  const output = run('-p', dir)
+  const output = run('print save.hg', dir)
   t.snapshot(output.toString('utf8'))
 })

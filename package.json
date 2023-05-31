@@ -1,7 +1,7 @@
 {
-  "name": "nms-tidy",
+  "name": "nms-sort-o-matic",
   "version": "0.1.0",
-  "description": "Use save file manipulation to sort the inventory in No Man's Sky.",
+  "description": "Use save file manipulation to manage the inventory in No Man's Sky.",
   "license": "GPL-3.0",
   "author": "Ava Johnson",
   "bin": "src/cli.js",
@@ -12,7 +12,7 @@
     "test": "ava",
     "build:format": "npx prettier -w src/**/*.js test/**/*.js *.js",
     "build:bundle": "npx rollup -c",
-    "build:package": "npx pkg -t latest-win-x64 --o dist/nms-tidy.exe dist/bundle.js",
+    "build:package": "npx pkg -t latest-win-x64 --o dist/nms-sort-o-matic.exe dist/bundle.js",
     "build": "npm run build:format && npm run build:bundle && npm run build:package"
   },
   "dependencies": {
