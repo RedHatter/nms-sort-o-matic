@@ -1,14 +1,20 @@
-import { mkdir, writeFile, copyFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile, copyFile } from 'node:fs/promises'
 import sade from 'sade'
 import pkg from '../package.json' assert { type: 'json' }
-import { readSaveFile, encodeSaveFile, sortSaveFile } from './main.js'
+import {
+  readSaveFile,
+  encodeSaveFile,
+  sortSaveFile,
+  downloadCategories,
+  downloadMappings,
+} from './main.js'
 
-async function writeJson(opts, data) {
+async function writeJson(opts, data, skipBackup) {
   if (opts.in === opts.out) {
-    if (data.__sorted) {
+    if (skipBackup) {
       console.log('Detected already edited save file. Skipping backup.')
     } else {
-      await copyFile(filepath, filepath + '.bk')
+      await copyFile(opts.out, opts.out + '.bk')
     }
   }
 
@@ -20,6 +26,7 @@ sade(pkg.name, true)
   .describe(pkg.description)
   .option('-i, --in', 'The save file to process', 'save.hg')
   .option('-o, --out', 'The file to write the results to')
+  .option('-u, --update', 'Download the configuration files then exit')
   .option('-d, --decode', 'Decript and decode save file then exit')
   .option('-e, --encode', 'Encode save file then exit')
   .action(async (opts) => {
@@ -31,6 +38,11 @@ sade(pkg.name, true)
       if (e.code !== 'EEXIST') {
         console.error(e)
       }
+    }
+
+    if (opts.update) {
+      await Promise.all([downloadCategories(), downloadMappings()])
+      process.exit(0)
     }
 
     if (opts.decode) {
@@ -47,8 +59,10 @@ sade(pkg.name, true)
     }
 
     const data = await readSaveFile(opts.in)
+    const skipBackup = data.__sorted
     const sorted = await sortSaveFile(data)
     const raw = await encodeSaveFile(sorted)
-    await writeJson(opts, raw)
+
+    await writeJson(opts, raw, skipBackup)
   })
   .parse(process.argv)

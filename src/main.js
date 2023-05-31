@@ -40,6 +40,10 @@ const getCategories = _.memoize(async () => {
     }
   }
 
+  return downloadCategories()
+})
+
+export async function downloadCategories() {
   const data = await Promise.all(
     ['66931870', '984581625', '1672062070', '874018846'].map(async (sheet) =>
       parseCsv(
@@ -66,7 +70,7 @@ const getCategories = _.memoize(async () => {
   )
 
   return categories
-})
+}
 
 const getMappings = _.memoize(async () => {
   try {
@@ -80,6 +84,10 @@ const getMappings = _.memoize(async () => {
     }
   }
 
+  return downloadMappings()
+})
+
+export async function downloadMappings() {
   const raw = await get(
     'https://github.com/monkeyman192/MBINCompiler/releases/latest/download/mapping.json'
   )
@@ -90,7 +98,7 @@ const getMappings = _.memoize(async () => {
   )
 
   return data.Mapping
-})
+}
 
 function decode(data, mappings) {
   return !data || typeof data !== 'object'
@@ -133,7 +141,7 @@ function decompress(buf) {
   return Buffer.concat(chunks).toString('utf8').slice(0, -1)
 }
 
-function sortSlots(items, slots, categories) {
+function sortSlots(items, categories) {
   const unreconized = new Set()
 
   items.sort((a, b) => {
@@ -159,11 +167,6 @@ function sortSlots(items, slots, categories) {
         unreconized
       ).join()}. Is 'categories.json' out of date?`
     )
-  }
-
-  for (const i in items) {
-    items[i].Index.X = slots[i].X
-    items[i].Index.Y = slots[i].Y
   }
 
   return items
@@ -193,6 +196,15 @@ function stackAdjacentSlots(items) {
   return items.filter((slot) => slot.Amount > 0)
 }
 
+function orderSlots(items, slots) {
+  for (const i in items) {
+    items[i].Index.X = slots[i].X
+    items[i].Index.Y = slots[i].Y
+  }
+
+  return items
+}
+
 export async function readSaveFile(filepath) {
   const rawMappings = await getMappings()
   const mappings = _.chain(rawMappings).keyBy('Key').mapValues('Value').value()
@@ -220,12 +232,9 @@ export async function sortSaveFile(data) {
   ]
 
   for (const inventory of inventoryList) {
-    inventory.Slots = sortSlots(
-      inventory.Slots,
-      inventory.ValidSlotIndices,
-      categories
-    )
+    inventory.Slots = sortSlots(inventory.Slots, categories)
     inventory.Slots = stackAdjacentSlots(inventory.Slots)
+    inventory.Slots = orderSlots(inventory.Slots, inventory.ValidSlotIndices)
   }
 
   const chestList = [
@@ -243,10 +252,13 @@ export async function sortSaveFile(data) {
 
   let combinedChests = sortSlots(
     chestList.flatMap((chest) => chest.Slots),
-    chestList.flatMap((chest) => chest.ValidSlotIndices),
     categories
   )
   combinedChests = stackAdjacentSlots(combinedChests)
+  combinedChests = orderSlots(
+    combinedChests,
+    chestList.flatMap((chest) => chest.ValidSlotIndices)
+  )
 
   let i = 0
   for (const chest of chestList) {
