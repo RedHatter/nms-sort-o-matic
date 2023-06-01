@@ -66,7 +66,7 @@ pause
 1. Create a `NMS.bat` file in the No Man's Sky Binaries directory with the following content. Replace the save file location appropriately.
 ```
 @echo off
-nms-sort-o-matic "C:\Users\Ava Johnson\AppData\Roaming\HelloGames\NMS\DefaultUser\save.hg"
+nms-sort-o-matic "C:\Users\John Doe\AppData\Roaming\HelloGames\NMS\DefaultUser\save.hg"
 start "No Man's Sky" NMS
 ```
 2. Navigate to "GOG Galaxy -> No Man's Sky -> Manage installation -> Configure -> Features"
