@@ -3,6 +3,9 @@ Uses save file manipulation to manage the inventory in No Man's Sky. Using save 
 
 Feel free to [open an issue](https://github.com/RedHatter/nms-sort-o-matic/issues/new) to request a feature or report a bugs.
 
+## Configuration files
+nms-sort-o-matic automatically downloads data from the [NMS Extracted Tables](https://docs.google.com/spreadsheets/d/1J8WdrubKgo8A9hPY-hbQLq4eVrb3n3lZAgiI2J7ncAU/edit#gid=0) spreadsheet into `items.json` as well as `mapping.json` from the [MBINCompiler](https://github.com/monkeyman192/MBINCompiler). These file may need to be manually deleted when the game updates.
+
 ## Usage
 
 ```
