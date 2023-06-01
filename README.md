@@ -60,6 +60,8 @@ pause
 2. Open steam and navigate to "Steam -> No Man's Sky -> Properties -> General"
 3. Set the launch options to `nms-sort-o-matic.bat && %command%`
 
+![Steam properties](screenshots/steam.png?raw=true)
+
 *Note: If anyone could tell me why simply running the `nms-sort-o-matic.exe` direclty from the launch options doesn't work I would be appreciative.*
 
 ### GOG
@@ -75,3 +77,5 @@ start "No Man's Sky" NMS
     * Set the label to "No Man's Sky".
     * Check "Default exectable"
     * Click "OK"
+
+![GOG Galaxy Configure](screenshots/gog.png?raw=true)
