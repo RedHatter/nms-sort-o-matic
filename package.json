@@ -2,7 +2,7 @@
   "name": "nms-sort-o-matic",
   "version": "0.1.0",
   "description": "Use save file manipulation to manage the inventory in No Man's Sky.",
-  "license": "GPL-3.0",
+  "license": "MIT",
   "author": "Ava Johnson",
   "bin": "src/cli.js",
   "type": "module",
