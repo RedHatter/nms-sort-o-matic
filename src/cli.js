@@ -11,6 +11,9 @@ import {
 } from './main.js'
 import _ from 'lodash'
 
+const bold = (value) => `\x1b[1m${value}\x1b[0m`
+const blue = (value) => `\x1b[34m${value}\x1b[0m`
+
 async function writeJson(outFile, inFile, data, skipBackup) {
   if (outFile === inFile) {
     if (skipBackup) {
@@ -33,10 +36,62 @@ async function ensureTemporaryDirectory() {
   }
 }
 
+function printItems(items) {
+  const cols = _.chain(items)
+    .flatMap()
+    .compact()
+    .reduce(
+      (cols, item) => ({
+        ...cols,
+        ..._.mapValues(item, (value, key) =>
+          typeof value === 'string' ? Math.max(value.length, cols[key] ?? 0) : 0
+        ),
+      }),
+      {}
+    )
+    .value()
+  const text = _.chain(items)
+    .flatMap((value, key) =>
+      !value || value.length < 1
+        ? []
+        : [
+            bold(key),
+            _.repeat('-', key.length),
+            ...value.map((item) => {
+              const formatted = _.omit(item, 'matches')
+
+              for (const key in item.matches) {
+                for (const { start, end } of item.matches[key]) {
+                  const value = item[key]
+                  formatted[key] =
+                    value.substring(0, start) +
+                    bold(blue(value.substring(start, end))) +
+                    value.substring(end)
+                }
+              }
+
+              return [
+                _.capitalize(formatted.name) +
+                  _.repeat(' ', cols.name - item.name.length),
+                formatted.id + _.repeat(' ', cols.id - item.id.length),
+                formatted.amount +
+                  _.repeat(' ', cols.amount - item.amount.length),
+                formatted.category +
+                  _.repeat(' ', cols.category - item.category.length),
+              ].join('\t')
+            }),
+            '\n',
+          ]
+    )
+    .join('\n')
+    .value()
+  console.log(text)
+}
+
 sade(pkg.name)
   .version(pkg.version)
   .describe(pkg.description)
-  .command('sort <save-file>', 'Sort the inventory', { default: true })
+  .command('sort <save-file>', 'Sort all inventories', { default: true })
   .option(
     '-o, --out',
     'The file to write the results to. Defaults to <save-file>'
@@ -53,48 +108,38 @@ sade(pkg.name)
     await writeJson(opts.out, inFile, raw, skipBackup)
   })
 
-  .command('print <save-file>', 'Display the items in inventory')
-  .action(async (inFile, opts) => {
+  .command('print <save-file>', 'Display the items in all inventories')
+  .action(async (inFile) => {
     await ensureTemporaryDirectory()
     const data = await readSaveFile(inFile)
     const inventoryItems = await getInventoryItems(data)
 
-    const cols = _.chain(inventoryItems)
-      .flatMap()
-      .compact()
-      .reduce(
-        (cols, item) => ({
-          ...cols,
-          ..._.mapValues(item, (value, key) =>
-            Math.max(String(value).length, cols[key] ?? 0)
-          ),
-        }),
-        {}
-      )
-      .value()
+    printItems(inventoryItems)
+  })
 
-    const res = _.chain(inventoryItems)
-      .flatMap((value, key) =>
-        !value || value.length < 1
-          ? []
-          : [
-              key,
-              ''.padEnd(key.length, '-'),
-              ...value.map((item) =>
-                [
-                  _.capitalize(item.name).padEnd(cols.name),
-                  item.id.padEnd(cols.id),
-                  String(item.amount).padEnd(cols.amount),
-                  item.category?.padEnd(cols.category),
-                ].join('\t')
-              ),
-              '\n',
-            ]
-      )
-      .join('\n')
-      .value()
-    console.log(res)
-    process.exit(0)
+  .command(
+    'find <save-file> <search-term>',
+    'Search for <search-term> in all inventories'
+  )
+  .action(async (inFile, term) => {
+    await ensureTemporaryDirectory()
+    const data = await readSaveFile(inFile)
+    const inventoryItems = await getInventoryItems(data)
+    const res = _.mapValues(inventoryItems, (items) =>
+      _.chain(items)
+        .map((item) => ({
+          ...item,
+          matches: _.mapValues(item, (value) =>
+            [...value.matchAll(new RegExp(term, 'gi'))].map((match) => ({
+              start: match.index,
+              end: match.index + term.length,
+            }))
+          ),
+        }))
+        .filter((value) => _.flatMap(value.matches).length > 0)
+        .value()
+    )
+    printItems(res)
   })
 
   .command('update', 'Download the configuration files')

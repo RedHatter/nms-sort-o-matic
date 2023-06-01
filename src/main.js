@@ -315,7 +315,7 @@ export async function getInventoryItems(data) {
         return {
           id,
           name: names[id] ?? '<unknown>',
-          amount: item.Amount,
+          amount: String(item.Amount),
           category: categories[id] ?? '<unknown>',
         }
       })

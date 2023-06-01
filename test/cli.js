@@ -113,3 +113,19 @@ test('prints inventory items', async (t) => {
   const output = run('print save.hg', dir)
   t.snapshot(output.toString('utf8'))
 })
+
+test('finds inventory items', async (t) => {
+  const dir = await getTemporaryDirectory(t)
+
+  await copyFile(
+    path.join('test', 'fixtures', 'items.json'),
+    path.join(dir, 'tmp', 'items.json')
+  )
+  await copyFile(
+    path.join('test', 'fixtures', 'save.hg'),
+    path.join(dir, 'save.hg')
+  )
+
+  const output = run('find save.hg fuel', dir)
+  t.snapshot(output.toString('utf8'))
+})
