@@ -175,7 +175,7 @@ function sortSlots(items, categories) {
     console.warn(
       `Unreconized item ids: ${Array.from(
         unreconized
-      ).join()}. Is 'categories.json' out of date?`
+      ).join()}. Is 'items.json' out of date?`
     )
   }
 
