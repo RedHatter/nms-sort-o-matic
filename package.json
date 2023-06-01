@@ -12,7 +12,7 @@
     "test": "ava",
     "build:format": "npx prettier -w src/**/*.js test/**/*.js *.js",
     "build:bundle": "npx rollup -c",
-    "build:package": "npx pkg -t latest-win-x64 --o dist/nms-sort-o-matic.exe dist/bundle.js",
+    "build:package": "npx pkg -t latest-win-x64 --out-path dist dist/nms-sort-o-matic.js",
     "build": "npm run build:format && npm run build:bundle && npm run build:package"
   },
   "dependencies": {

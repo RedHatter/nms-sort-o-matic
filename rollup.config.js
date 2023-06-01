@@ -6,7 +6,7 @@ import pkg from './package.json' assert { type: 'json' }
 export default {
   input: pkg.bin,
   output: {
-    file: 'dist/bundle.js',
+    file: `dist/${pkg.name}.js`,
     format: 'cjs',
   },
   external: ['lz4'],
