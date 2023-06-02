@@ -5,8 +5,18 @@ import { uid } from 'uid'
 import path from 'node:path'
 import { mkdir, rm, rmdir, copyFile, readFile, stat } from 'node:fs/promises'
 
+const platform =
+  process.platform === 'win32'
+    ? 'win'
+    : process.platform === 'darwin'
+    ? 'macos'
+    : 'linux'
+
 const run = (args, cwd) =>
-  execSync(`"${path.join(process.cwd(), 'dist', pkg.name)}" ${args}`, { cwd })
+  execSync(
+    `"${path.join(process.cwd(), 'dist', `${pkg.name}-${platform}`)}" ${args}`,
+    { cwd }
+  )
 
 const getTemporaryDirectory = async (t) => {
   const dir = path.join('tmp', uid())
