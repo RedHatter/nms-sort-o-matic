@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile, copyFile } from 'node:fs/promises'
+import { readFile, writeFile, copyFile } from 'node:fs/promises'
 import sade from 'sade'
 import pkg from '../package.json' assert { type: 'json' }
 import {
@@ -23,17 +23,7 @@ async function writeJson(outFile, inFile, data, skipBackup) {
     }
   }
 
-  await writeFile(outFile, JSON.stringify(data))
-}
-
-async function ensureTemporaryDirectory() {
-  try {
-    await mkdir('tmp')
-  } catch (e) {
-    if (e.code !== 'EEXIST') {
-      console.error(e)
-    }
-  }
+  await writeFile(outFile, JSON.stringify(data), { encoding: 'binary' })
 }
 
 function printItems(items) {
@@ -99,7 +89,6 @@ sade(pkg.name)
   .action(async (inFile, opts) => {
     opts.out ??= inFile
 
-    await ensureTemporaryDirectory()
     const data = await readSaveFile(inFile)
     const skipBackup = data.__sorted
     const sorted = await sortSaveFile(data)
@@ -110,7 +99,6 @@ sade(pkg.name)
 
   .command('print <save-file>', 'Display the items in all inventories')
   .action(async (inFile) => {
-    await ensureTemporaryDirectory()
     const data = await readSaveFile(inFile)
     const inventoryItems = await getInventoryItems(data)
 
@@ -122,7 +110,6 @@ sade(pkg.name)
     'Search for <search-term> in all inventories'
   )
   .action(async (inFile, term) => {
-    await ensureTemporaryDirectory()
     const data = await readSaveFile(inFile)
     const inventoryItems = await getInventoryItems(data)
     const res = _.mapValues(inventoryItems, (items) =>

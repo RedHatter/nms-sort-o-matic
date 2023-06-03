@@ -1,4 +1,4 @@
-import { writeFile, readFile } from 'node:fs/promises'
+import { writeFile, readFile, mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import https from 'node:https'
 import { parse as parseCsv } from 'csv-parse/sync'
@@ -26,6 +26,16 @@ function get(url) {
       })
       .on('error', reject)
   )
+}
+
+async function ensureTemporaryDirectory() {
+  try {
+    await mkdir('tmp')
+  } catch (e) {
+    if (e.code !== 'EEXIST') {
+      console.error(e)
+    }
+  }
 }
 
 async function getNames() {
@@ -77,6 +87,7 @@ export async function downloadItems() {
     ])
     .value()
 
+  await ensureTemporaryDirectory()
   await writeFile(path.join('tmp', 'items.json'), JSON.stringify(items))
 
   return items
@@ -102,6 +113,7 @@ export async function downloadMappings() {
     'https://github.com/monkeyman192/MBINCompiler/releases/latest/download/mapping.json'
   )
   const data = JSON.parse(raw)
+  await ensureTemporaryDirectory()
   await writeFile(
     path.join('tmp', 'mapping.json'),
     JSON.stringify(data.Mapping)
