@@ -52,7 +52,6 @@ async function sortSlots(items, order) {
       return -1
     }
 
-    let res
     for (const attr of order) {
       let res = 0
 
@@ -83,7 +82,7 @@ async function sortSlots(items, order) {
       }
     }
 
-    return res
+    return 0
   })
 
   if (unreconized.size > 0) {
