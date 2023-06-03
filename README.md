@@ -2,7 +2,11 @@
 
 Uses save file manipulation to manage the inventory in No Man's Sky. Using save file manipulation unfortunately means that live in-game sorting is not possible as any changes require the save to be reloaded in order to take effect.
 
+Can sort by any number of item name, id, category, and color. The default is category -> color -> id.
+
 Feel free to [open an issue](https://github.com/RedHatter/nms-sort-o-matic/issues/new) to request a feature or report a bugs.
+
+![Sorted inventory](screenshots/inventory.jpg?raw=true)
 
 ## Configuration files
 
@@ -19,7 +23,7 @@ Usage
 
 Available Commands
   sort      Sort all inventories
-  print     Display the items in all inventories
+  print     Display the contents of all inventories
   find      Search for <search-term> in all inventories
   update    Download the configuration files
   decode    Decript and decode <save-file> into human readable json
