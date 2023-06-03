@@ -16,6 +16,7 @@
     "build": "npm run build:format && npm run build:bundle && npm run build:package"
   },
   "dependencies": {
+    "colord": "^2.9.3",
     "csv-parse": "^5.4.0",
     "lodash": "^4.17.21",
     "lz4": "^0.6.5",

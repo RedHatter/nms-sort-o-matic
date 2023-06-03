@@ -38,17 +38,13 @@ async function ensureTemporaryDirectory() {
   }
 }
 
-async function getNames() {
-  const items = await getItems()
-  return _.mapValues(items, ([name, category]) => name)
+function normalizeColor(comp) {
+  return comp === undefined
+    ? undefined
+    : Math.round(255 * parseFloat(comp.replace(',', '.')))
 }
 
-async function getCategories() {
-  const items = await getItems()
-  return _.mapValues(items, ([name, category]) => category)
-}
-
-const getItems = _.memoize(async () => {
+export const getItemAttrs = _.memoize(async () => {
   try {
     const raw = await readFile(path.join('tmp', 'items.json'), {
       encoding: 'utf8',
@@ -81,10 +77,17 @@ export async function downloadItems() {
   const items = _.chain(data)
     .flatten()
     .keyBy('ID')
-    .mapValues((row) => [
-      row['Translated Name'] ?? row['TRANSLATED NAME'] ?? row['EN_Name'],
-      row.Category,
-    ])
+    .mapValues((row) => {
+      const [r, g, b] = row['Colour'].split(',')
+
+      return {
+        n: row['Translated Name'] ?? row['TRANSLATED NAME'] ?? row['EN_Name'],
+        c: row.Category,
+        r: normalizeColor(row['Colour.R'] ?? r),
+        g: normalizeColor(row['Colour.G'] ?? g),
+        b: normalizeColor(row['Colour.B'] ?? b),
+      }
+    })
     .value()
 
   await ensureTemporaryDirectory()
@@ -93,7 +96,7 @@ export async function downloadItems() {
   return items
 }
 
-const getMappings = _.memoize(async () => {
+export const getMappings = _.memoize(async () => {
   try {
     const raw = await readFile(path.join('tmp', 'mapping.json'), {
       encoding: 'utf8',
@@ -163,9 +166,29 @@ function decompress(buf) {
   return Buffer.concat(chunks).toString('binary').slice(0, -1)
 }
 
-const nonASCII = /[^\u0000-\u007f]/
+function stringComparator(a, b) {
+  return a === undefined || b === undefined ? 0 : a.localeCompare(b)
+}
 
-function sortSlots(items, categories) {
+function colorComparator(a, b) {
+  if (a.r === undefined || b.r === undefined) {
+    return 0
+  }
+
+  const colorA = colord(a).toHsl()
+  const colorB = colord(b).toHsl()
+
+  return colorA.h !== colorB.h
+    ? colorA.h - colorB.h
+    : colorA.s !== colorB.s
+    ? colorA.s - colorB.s
+    : colorB.l - colorA.l
+}
+
+export const nonASCII = /[^\u0000-\u007f]/
+
+async function sortSlots(items, order) {
+  const itemAttrs = await getItemAttrs()
   const unreconized = new Set()
 
   items.sort((a, b) => {
@@ -177,20 +200,53 @@ function sortSlots(items, categories) {
       return -1
     }
 
-    const aCat = categories[a.Id.substring(1)]
-    const bCat = categories[b.Id.substring(1)]
+    const idA = a.Id.substring(1)
+    const idB = b.Id.substring(1)
+    const attrsA = itemAttrs[idA]
+    const attrsB = itemAttrs[idB]
 
-    if (!aCat) {
+    if (attrsA === undefined) {
       unreconized.add(a.Id)
+      return 1
     }
 
-    if (!bCat) {
+    if (attrsB === undefined) {
       unreconized.add(b.Id)
+      return -1
     }
 
-    return !aCat || !bCat || aCat === bCat
-      ? a.Id.localeCompare(b.Id)
-      : aCat.localeCompare(bCat)
+    let res
+    for (const attr of order) {
+      let res = 0
+
+      switch (attr) {
+        case 'color':
+          res = colorComparator(attrsA, attrsB)
+          break
+
+        case 'name':
+          res = stringComparator(attrsA.n, attrsB.n)
+          break
+
+        case 'category':
+          res = stringComparator(attrsA.c, attrsB.c)
+          break
+
+        case 'id':
+          res = stringComparator(idA, idB)
+          break
+
+        default:
+          console.warn('Attempted to sort by an unreconized attribute: ' + attr)
+          break
+      }
+
+      if (res !== 0) {
+        return res
+      }
+    }
+
+    return res
   })
 
   if (unreconized.size > 0) {
@@ -252,9 +308,7 @@ export async function encodeSaveFile(data) {
   return decode(data, mappings)
 }
 
-export async function sortSaveFile(data) {
-  const categories = await getCategories()
-
+export async function sortSaveFile(data, order) {
   const inventoryList = [
     data.PlayerStateData.Inventory,
     ...data.PlayerStateData.ShipOwnership.map((ship) => ship.Inventory),
@@ -264,7 +318,7 @@ export async function sortSaveFile(data) {
   ]
 
   for (const inventory of inventoryList) {
-    inventory.Slots = sortSlots(inventory.Slots, categories)
+    inventory.Slots = await sortSlots(inventory.Slots, order)
     inventory.Slots = stackAdjacentSlots(inventory.Slots)
     inventory.Slots = orderSlots(inventory.Slots, inventory.ValidSlotIndices)
   }
@@ -282,9 +336,9 @@ export async function sortSaveFile(data) {
     data.PlayerStateData.Chest10Inventory,
   ]
 
-  let combinedChests = sortSlots(
+  let combinedChests = await sortSlots(
     chestList.flatMap((chest) => chest.Slots),
-    categories
+    order
   )
   combinedChests = stackAdjacentSlots(combinedChests)
   combinedChests = orderSlots(
@@ -305,8 +359,7 @@ export async function sortSaveFile(data) {
 }
 
 export async function getInventoryItems(data) {
-  const categories = await getCategories()
-  const names = await getNames()
+  const attrs = await getItemAttrs()
 
   return _.mapValues(
     {
@@ -336,9 +389,9 @@ export async function getInventoryItems(data) {
 
         return {
           id,
-          name: names[id] ?? '<unknown>',
+          name: attrs[id].n ?? '<unknown>',
           amount: String(item.Amount),
-          category: categories[id] ?? '<unknown>',
+          category: attrs[id].c ?? '<unknown>',
         }
       })
   )

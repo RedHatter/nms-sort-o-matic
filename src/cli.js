@@ -86,12 +86,17 @@ sade(pkg.name)
     '-o, --out',
     'The file to write the results to. Defaults to <save-file>'
   )
+  .option(
+    '-s, --sort',
+    'List of attributes to sort by. Any of name, id, category, or color',
+    'category,color,id'
+  )
   .action(async (inFile, opts) => {
     opts.out ??= inFile
 
     const data = await readSaveFile(inFile)
     const skipBackup = data.__sorted
-    const sorted = await sortSaveFile(data)
+    const sorted = await sortSaveFile(data, opts.sort.split(/\s*,\s*/))
     const raw = await encodeSaveFile(sorted)
 
     await writeJson(opts.out, inFile, raw, skipBackup)
