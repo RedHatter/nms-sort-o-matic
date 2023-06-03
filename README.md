@@ -1,4 +1,5 @@
 # No Man's Sky Sort-o-matic
+[NexusMods](https://www.nexusmods.com/nomanssky/mods/2796)
 
 Uses save file manipulation to manage the inventory in No Man's Sky. Using save file manipulation unfortunately means that live in-game sorting is not possible as any changes require the save to be reloaded in order to take effect.
 
