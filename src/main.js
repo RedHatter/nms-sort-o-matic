@@ -143,7 +143,7 @@ function decompress(buf) {
 
     if (magic != 0xfeeda1e5) {
       console.error('Invalid Block assuming already decompressed')
-      return buf.toString('utf8')
+      return buf.toString('binary')
     }
 
     const compressedSize = buf.readUIntLE(index, 4)
@@ -160,7 +160,7 @@ function decompress(buf) {
     chunks.push(output)
   }
 
-  return Buffer.concat(chunks).toString('utf8').slice(0, -1)
+  return Buffer.concat(chunks).toString('binary').slice(0, -1)
 }
 
 function sortSlots(items, categories) {
