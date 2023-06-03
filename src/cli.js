@@ -1,4 +1,5 @@
 import { readFile, writeFile, copyFile } from 'node:fs/promises'
+import _ from 'lodash'
 import sade from 'sade'
 import pkg from '../package.json' assert { type: 'json' }
 import {
@@ -8,75 +9,8 @@ import {
   downloadItems,
   downloadMappings,
   getInventoryItems,
+  printInventoryItems,
 } from './main.js'
-import _ from 'lodash'
-
-const bold = (value) => `\x1b[1m${value}\x1b[0m`
-const blue = (value) => `\x1b[34m${value}\x1b[0m`
-
-async function writeJson(outFile, inFile, data, skipBackup) {
-  if (outFile === inFile) {
-    if (skipBackup) {
-      console.log('Detected already edited save file. Skipping backup.')
-    } else {
-      await copyFile(inFile, inFile + '.bk')
-    }
-  }
-
-  await writeFile(outFile, JSON.stringify(data), { encoding: 'binary' })
-}
-
-function printItems(items) {
-  const cols = _.chain(items)
-    .flatMap()
-    .compact()
-    .reduce(
-      (cols, item) => ({
-        ...cols,
-        ..._.mapValues(item, (value, key) =>
-          typeof value === 'string' ? Math.max(value.length, cols[key] ?? 0) : 0
-        ),
-      }),
-      {}
-    )
-    .value()
-  const text = _.chain(items)
-    .flatMap((value, key) =>
-      !value || value.length < 1
-        ? []
-        : [
-            bold(key),
-            _.repeat('-', key.length),
-            ...value.map((item) => {
-              const formatted = _.omit(item, 'matches')
-
-              for (const key in item.matches) {
-                for (const { start, end } of item.matches[key]) {
-                  const value = item[key]
-                  formatted[key] =
-                    value.substring(0, start) +
-                    bold(blue(value.substring(start, end))) +
-                    value.substring(end)
-                }
-              }
-
-              return [
-                _.capitalize(formatted.name) +
-                  _.repeat(' ', cols.name - item.name.length),
-                formatted.id + _.repeat(' ', cols.id - item.id.length),
-                formatted.amount +
-                  _.repeat(' ', cols.amount - item.amount.length),
-                formatted.category +
-                  _.repeat(' ', cols.category - item.category.length),
-              ].join('\t')
-            }),
-            '\n',
-          ]
-    )
-    .join('\n')
-    .value()
-  console.log(text)
-}
 
 sade(pkg.name)
   .version(pkg.version)
@@ -91,6 +25,7 @@ sade(pkg.name)
     'List of attributes to sort by. Any of name, id, category, or color',
     'category,color,id'
   )
+  .option('-p, --print', 'Display contents of all inventories when done')
   .action(async (inFile, opts) => {
     opts.out ??= inFile
 
@@ -99,15 +34,28 @@ sade(pkg.name)
     const sorted = await sortSaveFile(data, opts.sort.split(/\s*,\s*/))
     const raw = await encodeSaveFile(sorted)
 
-    await writeJson(opts.out, inFile, raw, skipBackup)
+    if (opts.out === inFile) {
+      if (skipBackup) {
+        console.log('Detected already edited save file. Skipping backup.')
+      } else {
+        await copyFile(inFile, inFile + '.bk')
+      }
+    }
+
+    await writeFile(opts.out, JSON.stringify(raw), { encoding: 'binary' })
+
+    if (opts.print) {
+      const inventoryItems = await getInventoryItems(sorted)
+      printInventoryItems(inventoryItems)
+    }
   })
 
-  .command('print <save-file>', 'Display the items in all inventories')
+  .command('print <save-file>', 'Display contents of all inventories')
   .action(async (inFile) => {
     const data = await readSaveFile(inFile)
     const inventoryItems = await getInventoryItems(data)
 
-    printItems(inventoryItems)
+    printInventoryItems(inventoryItems)
   })
 
   .command(
@@ -116,22 +64,9 @@ sade(pkg.name)
   )
   .action(async (inFile, term) => {
     const data = await readSaveFile(inFile)
-    const inventoryItems = await getInventoryItems(data)
-    const res = _.mapValues(inventoryItems, (items) =>
-      _.chain(items)
-        .map((item) => ({
-          ...item,
-          matches: _.mapValues(item, (value) =>
-            [...value.matchAll(new RegExp(term, 'gi'))].map((match) => ({
-              start: match.index,
-              end: match.index + term.length,
-            }))
-          ),
-        }))
-        .filter((value) => _.flatMap(value.matches).length > 0)
-        .value()
-    )
-    printItems(res)
+    const items = await getInventoryItems(data, term)
+
+    printInventoryItems(items)
   })
 
   .command('update', 'Download the configuration files')
@@ -143,13 +78,16 @@ sade(pkg.name)
   )
   .option(
     '-o, --out',
-    'The file to write the results to. Defaults to <save-file>'
+    'The file to write the results to. By default writes to stdout.'
   )
   .action(async (inFile, opts) => {
-    opts.out ??= inFile
-
     const data = await readSaveFile(inFile)
-    await writeJson(opts.out, inFile, data)
+
+    if (opts.out) {
+      await writeFile(opts.out, JSON.stringify(data), { encoding: 'binary' })
+    } else {
+      console.log(JSON.stringify(data))
+    }
   })
 
   .command(
@@ -158,14 +96,17 @@ sade(pkg.name)
   )
   .option(
     '-o, --out',
-    'The file to write the results to. Defaults to <save-file>'
+    'The file to write the results to. By default writes to stdout.'
   )
   .action(async (inFile, opts) => {
-    opts.out ??= inFile
-
     const data = JSON.parse(await readFile(inFile))
     const raw = await encodeSaveFile(data)
-    await writeJson(opts.out, inFile, raw)
+
+    if (opts.out) {
+      await writeFile(opts.out, JSON.stringify(raw), { encoding: 'binary' })
+    } else {
+      console.log(JSON.stringify(raw))
+    }
   })
 
   .parse(process.argv)

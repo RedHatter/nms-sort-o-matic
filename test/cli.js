@@ -105,7 +105,7 @@ test('downloads configuration files', async (t) => {
   t.deepEqual(Object.keys(mappings[0]), ['Key', 'Value'])
 
   const items = JSON.parse(await readFile(path.join(dir, 'tmp', 'items.json')))
-  t.assert(Array.isArray(items['EX_RED']))
+  t.deepEqual(Object.keys(items['EX_RED']), ['n', 'c', 'r', 'g', 'b'])
 })
 
 test('prints inventory items', async (t) => {
