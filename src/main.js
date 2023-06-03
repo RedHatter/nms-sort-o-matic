@@ -163,10 +163,20 @@ function decompress(buf) {
   return Buffer.concat(chunks).toString('binary').slice(0, -1)
 }
 
+const nonASCII = /[^\u0000-\u007f]/
+
 function sortSlots(items, categories) {
   const unreconized = new Set()
 
   items.sort((a, b) => {
+    if (nonASCII.test(a.Id)) {
+      return 1
+    }
+
+    if (nonASCII.test(b.Id)) {
+      return -1
+    }
+
     const aCat = categories[a.Id.substring(1)]
     const bCat = categories[b.Id.substring(1)]
 
