@@ -8,28 +8,30 @@ const rgb = (value, r, g, b) => `\x1b[48;2;${r};${g};${b}m${value}\x1b[0m`
 
 export async function getInventoryItems(data, term) {
   const attrs = await getItemAttrs()
+  const playerState = data.PlayerStateData
 
   return _.mapValues(
     {
-      Inventory: data.PlayerStateData.Inventory,
-      ..._.chain(data.PlayerStateData.ShipOwnership)
+      Inventory: playerState.Inventory,
+      'Freighter Inventory': playerState.FreighterInventory,
+      ..._.chain(playerState.ShipOwnership)
         .mapKeys((value, i) => `Ship ${value.Name ?? parseInt(i) + 1}`)
         .mapValues('Inventory')
         .value(),
-      ..._.chain(data.PlayerStateData.VehicleOwnership)
+      ..._.chain(playerState.VehicleOwnership)
         .mapKeys((value, i) => `Exocraft ${value.Name ?? parseInt(i) + 1}`)
         .mapValues('Inventory')
         .value(),
-      'Chest 1': data.PlayerStateData.Chest1Inventory,
-      'Chest 2': data.PlayerStateData.Chest2Inventory,
-      'Chest 3': data.PlayerStateData.Chest3Inventory,
-      'Chest 4': data.PlayerStateData.Chest4Inventory,
-      'Chest 5': data.PlayerStateData.Chest5Inventory,
-      'Chest 6': data.PlayerStateData.Chest6Inventory,
-      'Chest 7': data.PlayerStateData.Chest7Inventory,
-      'Chest 8': data.PlayerStateData.Chest8Inventory,
-      'Chest 9': data.PlayerStateData.Chest9Inventory,
-      'Chest 10': data.PlayerStateData.Chest10Inventory,
+      'Chest 1': playerState.Chest1Inventory,
+      'Chest 2': playerState.Chest2Inventory,
+      'Chest 3': playerState.Chest3Inventory,
+      'Chest 4': playerState.Chest4Inventory,
+      'Chest 5': playerState.Chest5Inventory,
+      'Chest 6': playerState.Chest6Inventory,
+      'Chest 7': playerState.Chest7Inventory,
+      'Chest 8': playerState.Chest8Inventory,
+      'Chest 9': playerState.Chest9Inventory,
+      'Chest 10': playerState.Chest10Inventory,
     },
     (inv) =>
       _.chain(inv.Slots)

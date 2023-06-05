@@ -130,12 +130,13 @@ function orderSlots(items, slots) {
 }
 
 export async function sortSaveFile(data, { sortOrder, disableGrouping }) {
+  const playerState = data.PlayerStateData
+
   const inventoryList = [
-    data.PlayerStateData.Inventory,
-    ...data.PlayerStateData.ShipOwnership.map((ship) => ship.Inventory),
-    ...data.PlayerStateData.VehicleOwnership.map(
-      (vehicle) => vehicle.Inventory
-    ),
+    playerState.Inventory,
+    playerState.FreighterInventory,
+    ...playerState.ShipOwnership.map((ship) => ship.Inventory),
+    ...playerState.VehicleOwnership.map((vehicle) => vehicle.Inventory),
   ]
 
   for (const inventory of inventoryList) {
@@ -145,16 +146,16 @@ export async function sortSaveFile(data, { sortOrder, disableGrouping }) {
   }
 
   const chestList = [
-    data.PlayerStateData.Chest1Inventory,
-    data.PlayerStateData.Chest2Inventory,
-    data.PlayerStateData.Chest3Inventory,
-    data.PlayerStateData.Chest4Inventory,
-    data.PlayerStateData.Chest5Inventory,
-    data.PlayerStateData.Chest6Inventory,
-    data.PlayerStateData.Chest7Inventory,
-    data.PlayerStateData.Chest8Inventory,
-    data.PlayerStateData.Chest9Inventory,
-    data.PlayerStateData.Chest10Inventory,
+    playerState.Chest1Inventory,
+    playerState.Chest2Inventory,
+    playerState.Chest3Inventory,
+    playerState.Chest4Inventory,
+    playerState.Chest5Inventory,
+    playerState.Chest6Inventory,
+    playerState.Chest7Inventory,
+    playerState.Chest8Inventory,
+    playerState.Chest9Inventory,
+    playerState.Chest10Inventory,
   ]
 
   if (disableGrouping) {
