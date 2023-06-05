@@ -24,7 +24,7 @@ function stringComparator(a, b) {
 
 export const nonASCII = /[^\u0000-\u007f]/
 
-async function sortSlots(items, order) {
+async function sortSlots(items, sortOrder) {
   const itemAttrs = await getItemAttrs()
   const unreconized = new Set()
 
@@ -52,7 +52,7 @@ async function sortSlots(items, order) {
       return -1
     }
 
-    for (const attr of order) {
+    for (const attr of sortOrder) {
       let res = 0
 
       switch (attr) {
@@ -129,7 +129,7 @@ function orderSlots(items, slots) {
   return items
 }
 
-export async function sortSaveFile(data, order) {
+export async function sortSaveFile(data, { sortOrder, disableGrouping }) {
   const inventoryList = [
     data.PlayerStateData.Inventory,
     ...data.PlayerStateData.ShipOwnership.map((ship) => ship.Inventory),
@@ -139,7 +139,7 @@ export async function sortSaveFile(data, order) {
   ]
 
   for (const inventory of inventoryList) {
-    inventory.Slots = await sortSlots(inventory.Slots, order)
+    inventory.Slots = await sortSlots(inventory.Slots, sortOrder)
     inventory.Slots = stackAdjacentSlots(inventory.Slots)
     inventory.Slots = orderSlots(inventory.Slots, inventory.ValidSlotIndices)
   }
@@ -157,21 +157,29 @@ export async function sortSaveFile(data, order) {
     data.PlayerStateData.Chest10Inventory,
   ]
 
-  let combinedChests = await sortSlots(
-    chestList.flatMap((chest) => chest.Slots),
-    order
-  )
-  combinedChests = stackAdjacentSlots(combinedChests)
-  combinedChests = orderSlots(
-    combinedChests,
-    chestList.flatMap((chest) => chest.ValidSlotIndices)
-  )
+  if (disableGrouping) {
+    for (const chest of chestList) {
+      chest.Slots = await sortSlots(chest.Slots, sortOrder)
+      chest.Slots = stackAdjacentSlots(chest.Slots)
+      chest.Slots = orderSlots(chest.Slots, chest.ValidSlotIndices)
+    }
+  } else {
+    let chestGroup = await sortSlots(
+      chestList.flatMap((chest) => chest.Slots),
+      sortOrder
+    )
+    chestGroup = stackAdjacentSlots(chestGroup)
+    chestGroup = orderSlots(
+      chestGroup,
+      chestList.flatMap((chest) => chest.ValidSlotIndices)
+    )
 
-  let i = 0
-  for (const chest of chestList) {
-    const end = i + chest.ValidSlotIndices.length
-    chest.Slots = combinedChests.slice(i, end)
-    i = end
+    let i = 0
+    for (const chest of chestList) {
+      const end = i + chest.ValidSlotIndices.length
+      chest.Slots = chestGroup.slice(i, end)
+      i = end
+    }
   }
 
   data.__sorted = true

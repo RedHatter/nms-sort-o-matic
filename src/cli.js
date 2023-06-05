@@ -21,17 +21,21 @@ sade(pkg.name)
     'The file to write the results to. Defaults to <save-file>'
   )
   .option(
-    '-s, --sort',
+    '-s, --sort-order',
     'List of attributes to sort by. Any of name, id, category, or color',
     'category,color,id'
   )
   .option('-p, --print', 'Display contents of all inventories when done')
+  .option('--disable-grouping', 'Sort each chest individually')
   .action(async (inFile, opts) => {
     opts.out ??= inFile
 
     const data = await readSaveFile(inFile)
     const skipBackup = data.__sorted
-    const sorted = await sortSaveFile(data, opts.sort.split(/\s*,\s*/))
+    const sorted = await sortSaveFile(data, {
+      sortOrder: opts['sort-order'].split(/\s*,\s*/),
+      disableGrouping: opts['disable-grouping'] === true,
+    })
     const raw = await encodeSaveFile(sorted)
 
     if (opts.out === inFile) {
