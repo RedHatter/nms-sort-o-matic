@@ -13,7 +13,9 @@
     "build:format": "npx prettier -w src/**/*.js test/**/*.js *.js",
     "build:bundle": "npx rollup -c",
     "build:package": "npx pkg --out-path dist dist/nms-sort-o-matic.js",
-    "build": "npm run build:format && npm run build:bundle && npm run build:package"
+    "build": "npm run build:format && npm run build:bundle && npm run build:package",
+    "build:win": "npm run build:format && npm run build:bundle && npm run build:package -- -t latest-win-x64",
+    "build:linux": "npm run build:format && npm run build:bundle && npm run build:package -- -t latest-linux-x64"
   },
   "dependencies": {
     "colord": "^2.9.3",
